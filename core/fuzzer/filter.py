@@ -1,0 +1,27 @@
+class SmartFilter:
+    """All credit for this filter goes to @defparam:
+    https://gist.github.com/defparam/8067cc4eb0140399f2bcd5f66a860db4
+    """
+
+    def __init__(self, repeats=10):
+        # our data base to keep track of history
+        self.db = {}
+        # the number of repeats allowed before muting future responses
+        self._repeats = repeats
+
+    def check(self, status, wordlen, content_type):
+        # add content-type to the key?
+        # We make a directory key by concating status code + number of words
+        key = str(status) + str(wordlen) + str(content_type)
+        # if never seen this key before, add it to the dictionary with 1 hit
+        if key not in self.db:
+            self.db[key] = 1
+        # if key exists and it reached the repeat maximum, mute the response
+        elif self.db[key] >= self._repeats:
+            return False
+        # If the key hasn't reached the repeat limit,
+        # add to the hit count and allow the response to be shown
+        else:
+            self.db[key] += 1
+
+        return True
