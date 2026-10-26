@@ -1,175 +1,285 @@
-# Bypass Fuzzer
-The original 403fuzzer.py :)
+# BypassFuzzer
 
-**Fuzz 401/403ing endpoints for bypasses**
+**HTTP 401/403 Bypass Fuzzing Tool**
 
-Perform various checks via headers, path normalization, verbs, etc. to attempt to bypass ACL's or URL validation.
-- Output the response codes and length for each request, in a nicely organized, color coded way so things are readable.
-- "Smart" filter that lets you mute responses that look the same after a certain number of times.
-- Feed it raw HTTP requests from Burp.
+BypassFuzzer is a Python-based security testing tool designed to identify potential access control weaknesses in web applications.
 
-**If this tool helped get you a bounty or you'd just like to buy me a beer:**  
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/O5O3ZVDGN)  
-**Follow me on twitter! @intrudir**  
+Perform various security checks using HTTP headers, path normalization, HTTP methods, and other techniques to test potential bypasses in restricted endpoints.
 
-### Linux & Mac OS
+### Features
+
+- **HTTP 401/403 Fuzzing:** Test endpoints returning unauthorized or forbidden responses.
+- **Header Manipulation:** Test alternative HTTP headers.
+- **Path Normalization:** Test URL encoding and path variations.
+- **HTTP Method Testing:** Test different HTTP verbs.
+- **Burp Suite Integration:** Import raw HTTP requests directly from Burp Suite.
+- **Smart Filter:** Automatically suppress repeated responses.
+- **Custom Headers & Cookies:** Configure authentication and request parameters.
+- **Proxy Support:** Route requests through Burp Suite.
+- **Response Filtering:** Hide specific HTTP status codes or response lengths.
+- **Interaction Database:** Save successful HTTP 200 interactions in SQLite.
+- **OOB / Blind SSRF Testing:** Support out-of-band callback domains.
+
+---
+
+## Installation
+
+### Linux / Kali Linux / macOS
+
+Clone the repository:
+
 ```bash
-# clone the repo (or download it as a zip!) then navigate to the directory
-git clone https://github.com/NetSPI/BypassFuzzer.git
-cd BypassFuzzer
+git clone https://github.com/CAZZB/bypassfuzz.git
+cd bypassfuzz
+```
 
-# it is best practice to create a new virtual env. 
+Create a virtual environment:
+
+```bash
 python3 -m venv .venv
+```
 
-# activate the venv
+Activate the environment:
+
+```bash
 source .venv/bin/activate
+```
 
-# install dependencies
+Install dependencies:
+
+```bash
 python3 -m pip install -r requirements.txt
 ```
 
 ### Windows
+
+Clone the repository:
+
 ```bash
-# clone the repo (or download it as a zip!) then navigate to the directory
-# if you download the .zip, remember to extract it first
-cd BypassFuzzer-main\
-
-# it is best practice to create a new virtual env. 
-py -m venv .venv
-
-# activate the venv
-.venv\Scripts\activate
-
-# install dependencies
-# you need to use 'python' cmd in order to use the interpreter from this environment.
-python -m pip install -r .\requirements.txt
+git clone https://github.com/CAZZB/bypassfuzz.git
+cd bypassfuzz
 ```
 
-For Windows, in order to use the script, make sure you use the `python` command. This ensures you are using the virtual environment.
+Create a virtual environment:
+
+```powershell
+py -m venv .venv
+```
+
+Activate it:
+
+```powershell
+.venv\Scripts\activate
+```
+
+Install dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+```
 
 ---
-# Usage
-See the help menu
+
+## Usage
+
+Display the help menu:
+
 ```bash
-bypassfuzzer.py -h
+python3 bypassfuzzer.py -h
 ```
-## Specifying a request
-### Best method: Feed it a raw HTTP request from Burp!
-Simply paste the request into a file and run the script!  
-- It will parse and use `cookies` & `headers` from the request.
-- Easiest way to authenticate for your requests
+
+### Specifying a Request
+
+**Recommended method: Import a raw HTTP request from Burp Suite.**
+
+Save the captured request into a file and execute:
+
 ```bash
 python3 bypassfuzzer.py -r request.txt
 ```
-![image](https://user-images.githubusercontent.com/24526564/188021983-2f38bac0-c144-45ce-9a45-3db32470a136.png)
 
-### Using the flags
-**Specify a URL**
-```bash
-python3 bypassfuzzer.py -u http://example.com/test1/test2/test3/forbidden.html
-```
+The tool automatically parses cookies and headers from the request.
 
-**Specify cookies to use in requests:**  
-some examples:
-```bash
---cookies "cookie1=blah"
--c "cookie1=blah; cookie2=blah"
-```
-
-**Specify a method/verb and body data to send**
-```bash
-bypassfuzzer.py -u https://example.com/forbidden -m POST -d "param1=blah&param2=blah2"
-bypassfuzzer.py -u https://example.com/forbidden -m PUT -d "param1=blah&param2=blah2"
-```
-
-**Specify custom headers to use with every request**
-Maybe you need to add some kind of auth header like `Authorization: bearer <token>`
-
-Specify `-H "header: value"` for each additional header you'd like to add:
-```bash
-bypassfuzzer.py -u https://example.com/forbidden -H "Some-Header: blah" -H "Authorization: Bearer 1234567"
-```
-
-## Smart filter feature!
-Based on response code and length. If it sees a response 8 times or more it will automatically mute it.
-
-Repeats are changeable in the code until I add an option to specify it in flag
-
-**NOTE: Can't be used simultaneously with `-hc` or `-hl` (yet)**
+### Specify a URL
 
 ```bash
-# toggle smart filter on
-bypassfuzzer.py -u https://example.com/forbidden --smart
+python3 bypassfuzzer.py -u https://example.com/forbidden
 ```
 
-## Specify a proxy to use
-Useful if you wanna proxy through Burp
-```bash
-bypassfuzzer.py -u https://example.com/forbidden --proxy http://127.0.0.1:8080
-```
-
-## Skip sending specific payload types
-```bash
-# skip sending header payloads
-bypassfuzzer.py -u https://example.com/forbidden -sh
-# or --skip-headers
-
-# Skip sending path normailization payloads
-bypassfuzzer.py -u https://example.com/forbidden -su
-# or --skip-urls
-```
-
-## Hide response code/length
-Provide comma delimited lists without spaces.
-Examples:
-```bash
-# Hide response codes
-bypassfuzzer.py -u https://example.com/forbidden -hc 403,404,400  
-
-# Hide response lengths of 638
-bypassfuzzer.py -u https://example.com/forbidden -hl 638  
-```
-
-## Display request / response pair that returned 200 OK
-Every successful (200 OK) request & response pair gets saved to a sqlite database.  
-Every payload includes an index number for easy querying.  
-![](images/indexes_example.png)
-
-Once the attack is over, inspect your results and determine the index or payload of the data you'd like to see.  
-You must use BOTH of the following flags:
-- `--display-by` index or payload
-- `--display-interactions` index number or payload string in quotes
-```bash
-# display by index number
-bypassfuzzer.py --display-by index --display-interactions 49
-
-# display by payload
-bypassfuzzer.py --display-by payload --display-interactions "/%2e%2fAJAX/index.php"
-```
-
-Result:  
-![](images/interaction_1.png)
-
-For simplicity's sake, every time you run the tool, a fresh db is created.
-You can query a specific db via the `--idb` flag.  
-
-NOTE: 
-- the db needs to be inside the `interactions` dir to be useable.
-- If no db is specified via `--idb`, the newest one will be used by default.
+### Specify Cookies
 
 ```bash
-bypassfuzzer.py --display-by index --display-interactions 49 --idb interactions_20240729_145149.db
+python3 bypassfuzzer.py -u https://example.com/forbidden -c "session=123456; user=admin"
 ```
-![](images/interactions_dir.png)
 
+### Specify HTTP Methods and Request Body
 
-## Check for OOB / Blind SSRF pingback
-Provide the `--oob` flag with your collaborator or ISH domain
-You need to check for pingbacks yourself as I currently have no way of doing that for you.
 ```bash
---oob abc123.oastify.com
+python3 bypassfuzzer.py -u https://example.com/forbidden -m POST -d "param1=value1&param2=value2"
 ```
 
-# TODO
-- [ ] Add HTTP/2 support
-- [ ] Looking for ideas. Ping me on twitter! @intrudir
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden -m PUT -d "param1=value1&param2=value2"
+```
+
+### Custom HTTP Headers
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden \
+-H "Some-Header: value" \
+-H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Smart Filter
+
+Automatically suppress repeated responses based on HTTP status code and response length.
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden --smart
+```
+
+By default, responses repeated eight times or more are muted.
+
+**Note:** Cannot currently be used simultaneously with `-hc` or `-hl`.
+
+### Proxy Support
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden --proxy http://127.0.0.1:8080
+```
+
+Useful for routing requests through Burp Suite.
+
+### Skip Payload Categories
+
+Skip header payloads:
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden -sh
+```
+
+Or:
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden --skip-headers
+```
+
+Skip URL normalization payloads:
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden -su
+```
+
+Or:
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden --skip-urls
+```
+
+### Hide Response Codes and Lengths
+
+Hide specific HTTP status codes:
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden -hc 403,404,400
+```
+
+Hide specific response lengths:
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden -hl 638
+```
+
+---
+
+## Interaction Database
+
+Every successful HTTP 200 request/response interaction is saved in a SQLite database.
+
+Each interaction receives an index number for easier querying.
+
+### Display by Index
+
+```bash
+python3 bypassfuzzer.py --display-by index --display-interactions 49
+```
+
+### Display by Payload
+
+```bash
+python3 bypassfuzzer.py --display-by payload --display-interactions "/%2e%2fAJAX/index.php"
+```
+
+### Select a Specific Database
+
+Every execution creates a new database inside the `interactions` directory.
+
+By default, the newest database is used.
+
+To select a specific database:
+
+```bash
+python3 bypassfuzzer.py --display-by index --display-interactions 49 --idb interactions_20240729_145149.db
+```
+
+**Note:**
+- The database must be inside the `interactions` directory.
+- If `--idb` is not specified, the newest database is selected.
+
+### Screenshots
+
+**Interaction indexes**
+
+![Interaction indexes](images/indexes_example.png)
+
+**Request and response details**
+
+![Interaction details](images/interaction_1.png)
+
+**Interactions directory**
+
+![Interactions directory](images/interactions_dir.png)
+
+---
+
+## OOB / Blind SSRF Testing
+
+BypassFuzzer supports out-of-band callback testing using the `--oob` argument.
+
+Specify your authorized Collaborator or OAST domain:
+
+```bash
+python3 bypassfuzzer.py -u https://example.com/forbidden --oob abc123.oastify.com
+```
+
+You must manually monitor your OAST service for incoming callbacks.
+
+---
+
+## Roadmap
+
+- [ ] HTTP/2 support
+- [ ] Additional bypass techniques
+- [ ] Improved response analysis
+- [ ] Configurable Smart Filter
+- [ ] Advanced reporting capabilities
+
+---
+
+## Security Disclaimer
+
+BypassFuzzer is intended exclusively for authorized penetration testing, security research, and educational purposes.
+
+Only test systems you own or have explicit permission to assess.
+
+The author is not responsible for misuse or unauthorized use of this tool.
+
+## Author
+
+**CAZZB**
+
+GitHub: [@CAZZB](https://github.com/CAZZB)
+
+## Repository
+
+[https://github.com/CAZZB/bypassfuzz](https://github.com/CAZZB/bypassfuzz)
